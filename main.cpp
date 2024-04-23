@@ -6,32 +6,45 @@ using namespace std;
 #include "random"
 #include <cstdlib>
 #include <ctime>
+#include <chrono>
 
 
 
 //welcome screen user input
+
 void Button::keyboardInputName(sf::Event event, sf::Text &text2){
-    //take in keyboard letter press and backspace
-    //text 2 is the user name on the screen
-    //set the input to the string of text 2
-    if (event.type == sf::Event::TextEntered){
-        if (event.text.unicode < 128){
-            if (event.text.unicode == 8){//for backspace
-                string inputText = text2.getString();
+    static const int max_length = 10; // Maximum length of the name
+    static bool first_letter = true; // Flag to capitalize first letter
+
+    if (event.type == sf::Event::TextEntered) {
+        if (event.text.unicode < 128 && text2.getString().getSize() < max_length) {
+            if (event.text.unicode == 8) { // Backspace
+                // Remove last character if the string is not empty
+                string inputText = text2.getString().toAnsiString();
                 if (!inputText.empty()) {
                     inputText.pop_back();
                     text2.setString(inputText);
                 }
-            }
-            else{
+            } else if (isalpha(event.text.unicode)) { // Alphabetic character
                 char typedChar = static_cast<char>(event.text.unicode);
-                string inputText = text2.getString();
+                if (first_letter) {
+                    // Capitalize first letter
+                    typedChar = toupper(typedChar);
+                    first_letter = false;
+                } else {
+                    // Convert to lowercase
+                    typedChar = tolower(typedChar);
+                }
+                // Append the character to the string
+                string inputText = text2.getString().toAnsiString();
                 inputText += typedChar;
                 text2.setString(inputText);
             }
         }
     }
 }
+
+
 
 
 int main()
@@ -83,26 +96,26 @@ int main()
     text2.setStyle(sf::Text::Bold | sf::Text::Regular);
     text2.setPosition(450,325);
 
-    while (window.isOpen())//leaderboard goes in while loop
+    while (window.isOpen())//this is the welcome window
     {
         sf::Event event;
         while (window.pollEvent(event)){
             if (event.type == sf::Event::Closed){
                 window.close();
             }
-            if(event.type == sf::Event::TextEntered){
-                if (event.key.code == sf::Keyboard::N or event.key.code == sf::Keyboard::Enter) {
+            if(event.type == sf::Event::TextEntered) {
+                Button::keyboardInputName(event, text2);
+            }
+            if (event.type == sf::Event::KeyPressed){
+                if (event.key.code == sf::Keyboard::Enter){
                     if (!(text2.getString().isEmpty())) {
                         window.close();
-                    }
+                         }
+                     }
                 }
-                else {
-                    Button::keyboardInputName(event, text2);//
-                }
-
             }
 
-        }
+
 //otherwise
 
 //start rendering welcome screen
@@ -128,7 +141,7 @@ int main()
     sf::Sprite spriteFlag;
     spriteFlag.setTexture(texture2);
 
-    sf::Vector2f rightclickPosition;//these two vectors work together to store flag positions
+    //this vector work together to store flag positions
     std::vector<sf::Vector2f> rightclickPositions;
 
 //for tile revealed
@@ -144,9 +157,6 @@ int main()
     texture4.loadFromFile("files/images/mine.png");
     sf::Sprite spriteMine;
     spriteMine.setTexture(texture4);
-//loading timers
-
-
 
 
 
@@ -189,46 +199,78 @@ int main()
 
     sf::Texture pauseTexture;
     pauseTexture.loadFromFile("files/images/pause.png");
+    //digits for clock
+    sf::Texture clockNumbers;
+    clockNumbers.loadFromFile("files/images/digits.png");
 
 
     //This  helps generates the mines/ DO NOT DELETE
     TileVector[0][0].generateMines(gameWindow, TileVector, mineCount);
 
+    //working on clock management
+    chrono::steady_clock::time_point startTime;
+    chrono::steady_clock::time_point currentTime;
+    //for minutes
+    startTime = chrono::steady_clock::now();
+    sf::Sprite minuteDigit(clockNumbers);
+    minuteDigit.setPosition(((colCount * 32) - 97), ((rowCount + 0.5) * 32) + 16);
+    sf::Sprite minuteDigit2(clockNumbers);
+    minuteDigit2.setPosition(((colCount * 32) - 76), ((rowCount + 0.5) * 32) + 16);
 
+    //for seconds
+    sf::Sprite secondsDigit(clockNumbers);
+    secondsDigit.setPosition(((colCount * 32) - 54), ((rowCount + 0.5) * 32) + 16);
+    sf::Sprite secondsDigit2(clockNumbers);
+    secondsDigit2.setPosition(((colCount * 32) - 32), ((rowCount + 0.5) * 32) + 16);
 
-
-
-
+    currentTime = chrono::steady_clock::now();
+    //time when player starts the game
+    auto elapsedTime = chrono::duration_cast<chrono::seconds>(currentTime - startTime);
+    int seconds = elapsedTime.count();
+    int minutes = seconds / 60;
+    seconds %= 60;
+    sf::IntRect minuteRect((minutes / 10) * 21, 0, 21, 32);
+    sf::IntRect minuteRect2((minutes % 10) * 21, 0, 21, 32);
+    sf::IntRect secondsRect((seconds / 10) * 21, 0, 21, 32);
+    sf::IntRect secondsRect2((seconds % 10) * 21, 0, 21, 32);
 
     while (gameWindow.isOpen())
     {
 
         sf::Event event;
         while (gameWindow.pollEvent(event)) {
+
+            //stores mouse click positions-DO NOT DELETE
             sf::Vector2i mousePosition = sf::Mouse::getPosition(gameWindow);
+
             if (event.type == sf::Event::Closed) {
                 gameWindow.close();
             }
             if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Right) {
                 //places a flag on top of tile hidden - this works
                 if (!TileVector[mousePosition.x / 32][mousePosition.y / 32].isRevealed) {
-                    TileVector[mousePosition.x / 32][mousePosition.y / 32].isFlag = !TileVector[mousePosition.x / 32][
-                            mousePosition.y / 32].isFlag;
+            TileVector[mousePosition.x / 32][mousePosition.y / 32].isFlag = !TileVector[mousePosition.x / 32][mousePosition.y / 32].isFlag;
                 }
             }
 
             if (event.type == sf::Event::MouseButtonPressed && event.mouseButton.button == sf::Mouse::Left ) {
-                //left click does a tile revealed action
-                TileVector[mousePosition.x / 32][mousePosition.y / 32].reveal();
-                //for button clicks
+                //got rid of regular reveal because recursive reveal now works
+
+                //for recursive reveal - This works
+                int row = mousePosition.x / 32;
+                int col = mousePosition.y / 32;
+                TileVector[mousePosition.x / 32][mousePosition.y / 32].recursiveReveal(gameWindow, TileVector, row, col);
+
+                //for button clicks - These work
                 sf::FloatRect debugButtonBounds = debugSprite.getGlobalBounds();
                 sf::FloatRect faceButtonBounds = happySprite.getGlobalBounds();
                 sf::FloatRect pauseButtonBounds = playSprite.getGlobalBounds();
                 sf::FloatRect leaderboardButtonBounds = leaderboardSprite.getGlobalBounds();
-
-                if(debugButtonBounds.contains(sf::Vector2f(mousePosition))){//all mines reveal
+                if(debugButtonBounds.contains(sf::Vector2f(mousePosition))){
+                    //all mines reveal
                         cout << "debug button clicked" << endl;
                         TileVector[0][0].revealallMines(gameWindow,TileVector);
+
                     }
                 else if(faceButtonBounds.contains(sf::Vector2f(mousePosition))){
                         //this is for the happy face button
@@ -245,38 +287,32 @@ int main()
                         //flips the pause button to play button
                         playSprite.setTexture(pauseTexture);
 
-                    }
-                else if(leaderboardButtonBounds.contains(sf::Vector2f(mousePosition))) {
-                    //window.clear and goes the leader board
+                }
+                else if(Tile::checkWinCondition(TileVector)  or  leaderboardButtonBounds.contains(sf::Vector2f(mousePosition))) {
+                    //if user wins the game or they click the leaderboard button
                         cout << "leaderboard button clicked" << endl;
-                        gameWindow.close();
-                        sf::RenderWindow leaderboardWindow(sf::VideoMode(800, 600), "Leaderboard");
+                        sf::RenderWindow leaderboardWindow(sf::VideoMode(colCount * 16, (rowCount * 16)+ 50), "Leaderboard");
                         sf::Text leaderboardText;
                         leaderboardText.setFont(font);
-                        leaderboardText.setCharacterSize(20);
+                        leaderboardText.setCharacterSize(30);
                         leaderboardText.setFillColor(sf::Color::White);
                         leaderboardText.setStyle(sf::Text::Bold | sf::Text::Underlined);
-                        leaderboardText.setPosition(300,280);
+                        leaderboardText.setPosition(100,50);
                         leaderboardText.setString("LEADERBOARD");
-
+                        sf::Text leaderboardInfo;
 
                         while (leaderboardWindow.isOpen()) {
-
-
                             while (leaderboardWindow.pollEvent(event)) {
                                 if (event.type == sf::Event::Closed) {
                                     leaderboardWindow.close();
                                 }
                             }
                             leaderboardWindow.clear(sf::Color::Blue);
-                            // Draw your leaderboard content here
+                            // Draw leaderboard here
                             vector<Player> leaderboard = Player::readLeaderboardFromFile("leaderboard.txt");
                             Player::displayLeaderboard(leaderboard);
-
                             leaderboardWindow.draw(leaderboardText);
                             leaderboardWindow.display();
-
-
                         }
                 }
             }
@@ -293,6 +329,7 @@ int main()
                     TileVector[x][y].getAdjacentMines(gameWindow,TileVector, rowCount, colCount);//this works
                     TileVector[x][y].revealallMines(gameWindow,TileVector);//this works
                     TileVector[x][y].revealallTiles(gameWindow,TileVector);//does not work
+                    TileVector[0][0].YouLose(gameWindow,TileVector);
                     }
 
             }
@@ -317,13 +354,20 @@ int main()
         //two for loops iterate through tile vectors and use draw function on both
         for(int i = 0; i < TileVector.size(); i++){
             for(int j = 0; j < TileVector[i].size(); j++){
-                TileVector[i][j].drawTile(gameWindow);
-                int count = TileVector[i][j].getAdjacentMines(gameWindow, TileVector, i, j);//count is right
-                TileVector[i][j].revealNumbers(gameWindow,count,TileVector,i,j);
+                TileVector[i][j].drawTile(gameWindow,TileVector,i,j);
             }
 
         }
-
+        //drawing the digits
+        minuteDigit.setTextureRect(minuteRect);
+        gameWindow.draw(minuteDigit);
+        minuteDigit2.setTextureRect(minuteRect2);
+        gameWindow.draw(minuteDigit2);
+        //for drawing the seconds
+        secondsDigit.setTextureRect(secondsRect);
+        gameWindow.draw(secondsDigit);
+        secondsDigit2.setTextureRect(secondsRect2);
+        gameWindow.draw(secondsDigit2);
 
 
         gameWindow.draw(leaderboardSprite);

@@ -30,6 +30,7 @@ public://note: tile sprite is all sprites
     bool isMine = false;
     bool isFlag = false;
     bool isRevealed = false;
+    bool revealed;
     int adjacentMines;
     int count;
     sf::Sprite tileSprite;
@@ -51,9 +52,12 @@ public://note: tile sprite is all sprites
 
         mine2.loadFromFile("files/images/mine.png");
     }
+    void setRevealed(bool value){
+        revealed = value;
+        //tile2sprite.setTexture(revealedTile);
+    }
 
-
-   void drawTile( sf::RenderWindow &gameWindow) {
+   void drawTile( sf::RenderWindow &gameWindow,vector<vector<Tile>>& TileVector,int i, int j) {
        gameWindow.draw(tileSprite);
        if (isFlag) {
            gameWindow.draw(tile2sprite);
@@ -62,13 +66,41 @@ public://note: tile sprite is all sprites
            tile2sprite.setTexture(mine2);
            gameWindow.draw(tile2sprite);
        }
+       if (isRevealed and !isMine){
+           int count = getAdjacentMines(gameWindow, TileVector, i, j);//count is right
+           revealNumbers(gameWindow,count,TileVector,i,j);
+       }
    }
 
-    void reveal() {
+    void reveal() {//this is just a regular reveal
         revealedTile.loadFromFile("files/images/tile_revealed.png");
         tileSprite.setTexture(revealedTile);
         isRevealed = true;
     }
+
+    void recursiveReveal(sf::RenderWindow &gameWindow, vector<vector<Tile>>& TileVector, int row, int col){
+        //attempting recursive reveal
+        if (TileVector[row][col].isMineTile() || TileVector[row][col].isRevealed == true) {
+            return;
+        }
+        TileVector[row][col].reveal();
+
+        int adjacentMines = TileVector[row][col].getAdjacentMines(gameWindow, TileVector, row, col);
+        if (adjacentMines > 0) {
+            return;
+        }
+        int numRows = TileVector.size();
+        int numCols = TileVector[0].size();
+        for (int i = row - 1; i <= row + 1; ++i) {
+            for (int j = col - 1; j <= col + 1; ++j) {
+                if (i >= 0 && i < numRows && j >= 0 && j < numCols && !(i == row && j == col)) {
+                    recursiveReveal(gameWindow, TileVector, i, j);
+                }
+            }
+        }
+    }
+
+
     void generateMines(sf::RenderWindow& gameWindow,  vector<vector<Tile>>& tileVector,int mineCount) {
         random_device rd;
         mt19937 gen(rd());
@@ -116,7 +148,6 @@ public://note: tile sprite is all sprites
             }
          }
         adjacentMines = count;
-       // cout << count << endl;
         return count;
      }
 
@@ -181,13 +212,55 @@ public://note: tile sprite is all sprites
         delete numberTexture;
     }
 
-    void openLeaderboard(sf::RenderWindow& gameWindow , sf::RenderWindow& leaderboardWindow){
-        gameWindow.clear(sf::Color(255, 255, 255, 128));
-        leaderboardWindow.clear(sf::Color::Blue);
-        leaderboardWindow.display();
+
+
+
+    static bool checkWinCondition(const vector<vector<Tile>>& tileVector) {
+        for (const auto& row : tileVector) {
+            for (const auto& tile : row) {
+                if (tile.isRevealed && !tile.isMine) {//revealed and not mine
+                    continue;
+                }
+                if (!tile.isRevealed && !tile.isMine) {
+                    //tile is not revealed yet and it is not a mine
+                    //game continues
+                    return false;
+                }
+                if (tile.isRevealed && tile.isMine) {//user clicks and a mine is revealed
+                    //player loses
+                    cout << "you lost lol" << endl;
+                    return false;
+                }
+            }
+        }
+        // If all non-mine tiles are revealed and no mine tiles are revealed, the game is won
+        cout << "game won" << endl;
+        return true;
 
     }
+
+    static void YouLose(sf::RenderWindow& gameWindow,const vector<vector<Tile>>& tileVector) {
+        bool gameOver = false; // Flag to indicate if the game is over
+        for (const auto &row: tileVector) {
+            for (const auto &tile: row) {
+                if (tile.isRevealed && tile.isMine) {
+                    cout << "You lose. Ending game" << endl;
+                    gameOver = true; // Set game over flag
+                    break;
+                }
+            }
+            if (gameOver) break; // Exit outer loop if game is over
+        }
+        // Prevent further interactions if game is over
+        if (gameOver) {
+            cout << "changing to leaderboard screen" << endl;
+            //game is over
+            //close the game window and display leaderboard
+        }
+    }
+
 };
+
 
 
 class Player{//for leaderboard window
@@ -235,6 +308,7 @@ public:
             rank++;
         }
     }
+
 
 
 
