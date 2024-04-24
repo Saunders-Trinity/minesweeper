@@ -9,21 +9,16 @@ using namespace std;
 #include <cstdlib>
 #include <ctime>
 #include <random>
-
 #include <SFML/Graphics.hpp>
-
 
 class Button{
 public:
-
     sf::Event event;//for functions when there are keyboard events
     string inputText;//welcome screen input
     static void keyboardInputName(sf::Event event, sf::Text &text2);
 
 
 };
-
-
 
 class Tile{
 public://note: tile sprite is all sprites
@@ -51,10 +46,6 @@ public://note: tile sprite is all sprites
         tile2sprite.setPosition(x,y);
 
         mine2.loadFromFile("files/images/mine.png");
-    }
-    void setRevealed(bool value){
-        revealed = value;
-        //tile2sprite.setTexture(revealedTile);
     }
 
    void drawTile( sf::RenderWindow &gameWindow,vector<vector<Tile>>& TileVector,int i, int j) {
@@ -84,7 +75,6 @@ public://note: tile sprite is all sprites
             return;
         }
         TileVector[row][col].reveal();
-
         int adjacentMines = TileVector[row][col].getAdjacentMines(gameWindow, TileVector, row, col);
         if (adjacentMines > 0) {
             return;
@@ -106,7 +96,6 @@ public://note: tile sprite is all sprites
         mt19937 gen(rd());
         int minesPlaced = 0;
         int totalTiles = tileVector.size() * tileVector[0].size();
-
         while (minesPlaced < mineCount) {
             int randomIndex = rand() % totalTiles; // Generate random index for the tileVector
             int row = randomIndex / tileVector[0].size();
@@ -120,19 +109,10 @@ public://note: tile sprite is all sprites
         }
     }
 
-
-
-
     bool isMineTile() const {
-
         return isMine;
     }
     int getAdjacentMines(sf::RenderWindow& gameWindow, const vector<vector<Tile>>& tileVector, int row, int col) {
-        //loops through  adjacent mines
-        //counts them
-        //returns number
-        //if that number is 1-8
-        //then...
         int count = 0;
         int numRows = tileVector.size();
         int numCols = tileVector[0].size();
@@ -161,15 +141,11 @@ public://note: tile sprite is all sprites
 
 
     void revealallMines(sf::RenderWindow& gameWindow,  vector<vector<Tile>>& tileVector) {
-        //user clicks on tile
-        //all other tiles reveal
         int numRows = tileVector.size();
         int numCols = tileVector[0].size();
         for (int i = 0; i < numRows; ++i) {
             for (int j = 0; j < numCols; ++j) {
-                // Check if the tile is a mine
                 if (tileVector[i][j].isMineTile()) {
-                    // Reveal the mine tile
                     tile2sprite.setTexture(mine2);
                     tileVector[i][j].isRevealed = true;
                 }
@@ -181,9 +157,7 @@ public://note: tile sprite is all sprites
         int numCols = tileVector[0].size();
         for (int i = 0; i < numRows; ++i) {
             for (int j = 0; j < numCols; ++j) {
-                // Check if the tile is a mine
                 if (!tileVector[i][j].isMineTile() and !isRevealed) {
-                    // flip all of the hidden tiles to reveal tiles?
                     tileSprite.setTexture(revealedTile);
                     tileVector[i][j].isRevealed = true;
                 }
@@ -198,16 +172,12 @@ public://note: tile sprite is all sprites
         Tile& tile = tileVector[x][y];
         if(count >= 1 && count <= 8 && !tile.isMineTile()){//a number and not a mine tile
             numberTexture->loadFromFile("files/images/number_" + std::to_string(count) + ".png");
-
         }
         sf::Sprite* numberSprite = new sf::Sprite();
         numberSprite->setTexture(*numberTexture);
         numberSprite->setPosition(x * 32, y * 32);
-
-        // Draw sprite
         gameWindow.draw(*numberSprite);
 
-        // Clean up memory
         delete numberSprite;
         delete numberTexture;
     }
@@ -222,48 +192,22 @@ public://note: tile sprite is all sprites
                     continue;
                 }
                 if (!tile.isRevealed && !tile.isMine) {
-                    //tile is not revealed yet and it is not a mine
-                    //game continues
                     return false;
                 }
                 if (tile.isRevealed && tile.isMine) {//user clicks and a mine is revealed
-                    //player loses
-                    cout << "you lost lol" << endl;
                     return false;
                 }
             }
         }
-        // If all non-mine tiles are revealed and no mine tiles are revealed, the game is won
-        cout << "game won" << endl;
         return true;
 
     }
 
-    static void YouLose(sf::RenderWindow& gameWindow,const vector<vector<Tile>>& tileVector) {
-        bool gameOver = false; // Flag to indicate if the game is over
-        for (const auto &row: tileVector) {
-            for (const auto &tile: row) {
-                if (tile.isRevealed && tile.isMine) {
-                    cout << "You lose. Ending game" << endl;
-                    gameOver = true; // Set game over flag
-                    break;
-                }
-            }
-            if (gameOver) break; // Exit outer loop if game is over
-        }
-        // Prevent further interactions if game is over
-        if (gameOver) {
-            cout << "changing to leaderboard screen" << endl;
-            //game is over
-            //close the game window and display leaderboard
-        }
-    }
+
 
 };
 
-
-
-class Player{//for leaderboard window
+class Player{
 public:
     string name;
     string time;
@@ -300,7 +244,6 @@ public:
     }
 
 
-
     static void displayLeaderboard(const std::vector<Player>& leaderboard) {
         int rank = 1;
         for (const auto& player : leaderboard) {
@@ -308,8 +251,6 @@ public:
             rank++;
         }
     }
-
-
 
 
 
